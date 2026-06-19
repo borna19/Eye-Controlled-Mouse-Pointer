@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GazeRecorder - GazeInsight Live Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👁️</text></svg>">
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #7209b7;
+            --accent: #f72585;
+            --dark: #1a1a2e;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --success: #4cc9f0;
+            --warning: #f8961e;
+            --danger: #f94144;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navbar Styles (from your base.html) */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            padding: 1rem 0;
+        }
+
+        .top-nav.scrolled {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 0.8rem 0;
+        }
+
+        .top-nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top-nav-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .top-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-decoration: none;
+            background: linear-gradient(45deg, #4361ee, #7209b7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: all 0.3s ease;
+        }
+
+        .top-logo:hover {
+            transform: scale(1.05);
+        }
+
+        .nav-divider {
+            color: #cbd5e0;
+            font-weight: 300;
+        }
+
+        .nav-subtitle {
+            color: var(--gray);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .top-nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .top-nav-link {
+            color: var(--dark);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding: 0.5rem 0;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .top-nav-link:hover {
+            color: var(--primary);
+        }
+
+        .top-nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+
+        .top-nav-link:hover::after {
+            width: 100%;
+        }
+
+        .top-nav-free {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white !important;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.2);
+        }
+
+        .top-nav-free:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.3);
+        }
+
+        /* Adjust main content for fixed navbar */
+        main {
+            padding-top: 80px; /* Space for fixed navbar */
+        }
+
+        /* Hero Banner Styles */
+        .hero-banner {
+            min-height: calc(100vh - 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .banner-with-image {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .banner-image-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: calc(100vh - 80px);
+        }
+
+        .banner-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .banner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.9) 0%, rgba(67, 97, 238, 0.8) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .banner-content {
+            text-align: center;
+            color: white;
+            max-width: 800px;
+            padding: 2rem;
+        }
+
+        .banner-title {
+            font-size: 4.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #4cc9f0, #f72585);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .banner-subtitle {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .banner-description {
+            font-size: 1.2rem;
+            margin-bottom: 2.5rem;
+            color: #cbd5e0;
+            line-height: 1.8;
+            font-weight: 400;
+        }
+
+        .banner-cta {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .cta-button {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cta-button:first-child {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+        }
+
+        .cta-button:first-child:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(67, 97, 238, 0.3);
+        }
+
+        .cta-button:last-child {
+            background: linear-gradient(135deg, #20c997 0%, #0ca678 100%);
+            color: white;
+            border: none;
+        }
+
+        .cta-button:last-child:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(32, 201, 151, 0.3);
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            background: var(--light);
+            padding: 5rem 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.8rem;
+            color: var(--dark);
+            margin-bottom: 1rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .section-header p {
+            font-size: 1.2rem;
+            color: var(--gray);
+            max-width: 600px;
+            margin: 0 auto;
+            font-weight: 400;
+        }
+
+        /* Demo Section Styles */
+        .demo-section {
+            margin: 3rem 0;
+        }
+
+        .demo-container {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+        }
+
+        .demo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #f1f3f9;
+        }
+
+        .demo-header h3 {
+            font-size: 1.8rem;
+            color: var(--dark);
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .demo-button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.2);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Video and Visualization Container */
+        .demo-visualization {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .demo-visualization {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .video-container {
+            background: #1a202c;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .video-placeholder {
+            width: 100%;
+            height: 400px;
+            background: #090b10;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .input_video,
+        .output_canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gaze-point {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, rgba(244, 114, 182, 0.8) 0%, rgba(244, 114, 182, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            transition: all 0.1s ease;
+        }
+
+        .visualization-container {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .visualization-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .visualization-header h4 {
+            margin: 0;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-weight: 800;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+        }
+
+        .feature-title {
+            font-size: 1.4rem;
+            color: var(--dark);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .feature-description {
+            color: var(--gray);
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--dark);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .footer h3 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #4cc9f0, #f72585);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .footer-links a {
+            color: #cbd5e0;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-weight: 500;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .copyright {
+            color: #a0aec0;
+            font-size: 0.9rem;
+            margin-top: 2rem;
+            font-weight: 400;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .top-nav .container {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .top-nav-left {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .nav-divider {
+                display: none;
+            }
+
+            .top-nav-right {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 15px;
+            }
+
+            .banner-title {
+                font-size: 3rem;
+            }
+            
+            .banner-subtitle {
+                font-size: 1.4rem;
+            }
+            
+            .banner-cta {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .cta-button {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .section-header h2 {
+                font-size: 2.2rem;
+            }
+            
+            .demo-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .demo-controls {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .banner-title {
+                font-size: 2.5rem;
+            }
+            
+            .demo-visualization {
+                padding: 1rem;
+            }
+            
+            .feature-card {
+                padding: 1.5rem;
+            }
+            
+            .top-nav-free {
+                padding: 0.4rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            .top-nav-link {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="container">
+            <div class="top-nav-left">
+                <a href="/" class="top-logo">GazePointer</a>
+                <span class="nav-divider">|</span>
+                <span class="nav-subtitle">Webcam Eye Tracking</span>
+            </div>
+            <div class="top-nav-right">
+                <a href="/gazeinsight" class="top-nav-free">Try it FREE</a>
+                <a href="/gazeinsight" class="top-nav-link">GazeInsight</a>
+                <a href="/gazecloud" class="top-nav-link">GazeCloud</a>
+                <a href="#" class="top-nav-link">GazeFlow</a>
+                <a href="#" class="top-nav-link">FAQ</a>
+                <a href="#" class="top-nav-link">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Banner -->
+    <section class="hero-banner">
+        <div class="banner-with-image">
+            <div class="banner-image-container">
+                <div class="banner-overlay">
+                    <div class="banner-content container">
+                        <h1 class="banner-title">GazeInsight</h1>
+                        <p class="banner-subtitle">Live Eye Tracking Demo Platform</p>
+                        <p class="banner-description">
+                            Experience real-time gaze tracking directly in your browser. 
+                            No hardware required. See your eye movements visualized instantly 
+                            with our computer vision-powered technology.
+                        </p>
+                        <p style="color: #e2e8f0; margin-bottom: 1.5rem; font-size: 1rem;">
+                            Tip: Click "Start Tracking" and allow webcam access to see live browser-based eye tracking. 
+                            This demo uses MediaPipe in the browser to detect gaze and blinks.
+                        </p>
+                        <div class="banner-cta">
+                            <a href="#live-demo" class="cta-button">
+                                <i class="fas fa-eye"></i> Start Live Demo
+                            </a>
+                            <a href="#features" class="cta-button">
+                                <i class="fas fa-bolt"></i> Learn More
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Demo Section -->
+    <section id="live-demo" class="main-content">
+        <div class="container">
+            <div class="section-header">
+                <h2>Live Gaze Tracking Demo</h2>
+                <p>Watch your eye movements in real-time using just your webcam</p>
+            </div>
+            
+            <div class="demo-section">
+                <div class="demo-container">
+                    <div class="demo-header">
+                        <h3>Real-time Eye Tracking</h3>
+                        <div class="demo-controls">
+                            <button id="start-tracking" class="demo-button btn-primary">
+                                <i class="fas fa-play-circle"></i> Start Tracking
+                            </button>
+                            <button id="stop-tracking" class="demo-button btn-outline">
+                                <i class="fas fa-stop-circle"></i> Stop
+                            </button>
+                            <button id="calibrate" class="demo-button btn-outline">
+                                <i class="fas fa-crosshairs"></i> Calibrate
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="demo-visualization">
+                        <div class="video-container">
+                            <div id="video-placeholder" class="video-placeholder">
+                                <video id="input_video" class="input_video" autoplay muted playsinline></video>
+                                <canvas id="output_canvas" class="output_canvas"></canvas>
+                                <div class="gaze-point" id="gaze-point" style="display: none;"></div>
+                                <div id="camera-error" class="camera-error-message" style="display:none; position:absolute; left:16px; right:16px; bottom:16px; padding:12px 16px; background: rgba(220, 38, 38, 0.9); color: white; border-radius: 12px; font-size: 0.95rem; text-align:center; z-index:2;">
+                                    Camera access denied. Allow webcam permission in your browser and refresh the page.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="visualization-container">
+                            <div class="visualization-header">
+                                <h4>Gaze Analytics</h4>
+                                <span id="tracking-status" class="status-badge" style="padding: 0.5rem 1rem; background: #fed7d7; color: #9b2c2c; border-radius: 20px; font-weight: 500;">
+                                    <i class="fas fa-circle"></i> Not Tracking
+                                </span>
+                            </div>
+                            <canvas id="heatmap-canvas" width="400" height="300" style="width: 100%; height: 300px; background: #f7fafc; border-radius: 10px;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Live Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="gaze-x">0.00</div>
+                            <div class="stat-label">X Coordinate</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="gaze-y">0.00</div>
+                            <div class="stat-label">Y Coordinate</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="confidence">0%</div>
+                            <div class="stat-label">Confidence</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="fixation-count">0</div>
+                            <div class="stat-label">Fixations</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Controls -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #f1f3f9;">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--gray); font-weight: 500;">
+                                <i class="fas fa-sliders-h"></i> Tracking Settings
+                            </label>
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                <label>
+                                    <input type="checkbox" id="show-gaze-point" checked> Show Gaze Point
+                                </label>
+                                <label>
+                                    <input type="checkbox" id="record-session"> Record Session
+                                </label>
+                            </div>
+                        </div>
+                        <button id="export-data" class="demo-button btn-outline">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Key Features</h2>
+                <p>Powered by advanced computer vision and machine learning</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <h3 class="feature-title">Webcam-Based</h3>
+                    <p class="feature-description">
+                        No special hardware needed. Works with any modern webcam. 
+                        Uses computer vision to track eye movements accurately.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3 class="feature-title">Real-time Processing</h3>
+                    <p class="feature-description">
+                        Low-latency gaze tracking with &lt;100ms response time. 
+                        Perfect for interactive applications and usability testing.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="feature-title">Live Analytics</h3>
+                    <p class="feature-description">
+                        Instant visualization of gaze patterns, fixations, and heatmaps. 
+                        Export data for further analysis.
+                    </p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="feature-title">API Ready</h3>
+                    <p class="feature-description">
+                        Integrate gaze tracking into your applications with our REST API. 
+                        Available for web, mobile, and desktop platforms.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <h3>GazeRecorder</h3>
+                <p>Advanced eye tracking technology accessible to everyone</p>
+                
+                <div class="footer-links">
+                    <a href="#privacy">Privacy Policy</a>
+                    <a href="#terms">Terms of Service</a>
+                    <a href="#api">API Documentation</a>
+                    <a href="#contact">Contact</a>
+                </div>
+                
+                <div class="copyright">
+                    © 2024 GazeRecorder. All rights reserved. 
+                    This demo uses browser-based webcam tracking with MediaPipe.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', function () {
+            const topNav = document.querySelector('.top-nav');
+            if (window.scrollY > 50) {
+                topNav.classList.add('scrolled');
+            } else {
+                topNav.classList.remove('scrolled');
+            }
+        });
+
+        // Demo functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const startBtn = document.getElementById('start-tracking');
+            const stopBtn = document.getElementById('stop-tracking');
+            const calibrateBtn = document.getElementById('calibrate');
+            const gazePoint = document.getElementById('gaze-point');
+            const gazeX = document.getElementById('gaze-x');
+            const gazeY = document.getElementById('gaze-y');
+            const confidence = document.getElementById('confidence');
+            const fixationCount = document.getElementById('fixation-count');
+            const trackingStatus = document.getElementById('tracking-status');
+            const exportBtn = document.getElementById('export-data');
+            const showGazePoint = document.getElementById('show-gaze-point');
+            const heatmapCanvas = document.getElementById('heatmap-canvas');
+            const videoElement = document.getElementById('input_video');
+            const canvasElement = document.getElementById('output_canvas');
+            const cameraError = document.getElementById('camera-error');
+            const canvasCtx = canvasElement.getContext('2d');
+
+            let isTracking = false;
+            let camera = null;
+            let faceMesh = null;
+            let blinkCount = 0;
+            let gazeData = [];
+            let blinkLocked = false;
+
+            function resizeCanvas() {
+                canvasElement.width = videoElement.clientWidth;
+                canvasElement.height = videoElement.clientHeight;
+            }
+
+            function showCameraError(message) {
+                cameraError.textContent = message;
+                cameraError.style.display = 'block';
+            }
+
+            function hideCameraError() {
+                cameraError.style.display = 'none';
+            }
+
+            function updateHeatmap() {
+                const ctx = heatmapCanvas.getContext('2d');
+                const width = heatmapCanvas.width;
+                const height = heatmapCanvas.height;
+
+                ctx.fillStyle = 'rgba(247, 250, 252, 0.12)';
+                ctx.fillRect(0, 0, width, height);
+
+                gazeData.slice(-100).forEach(point => {
+                    const radius = point.value * 18;
+                    const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius);
+                    gradient.addColorStop(0, `rgba(244, 114, 182, ${point.value})`);
+                    gradient.addColorStop(1, 'rgba(244, 114, 182, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            function onResults(results) {
+                if (!results.image) return;
+
+                resizeCanvas();
+                canvasCtx.save();
+                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+                if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                    const landmarks = results.multiFaceLandmarks[0];
+                    const width = canvasElement.width;
+                    const height = canvasElement.height;
+                    const gazeIndex = landmarks[475] || landmarks[474];
+                    const gazeXnorm = gazeIndex.x;
+                    const gazeYnorm = gazeIndex.y;
+
+                    gazeX.textContent = gazeXnorm.toFixed(3);
+                    gazeY.textContent = gazeYnorm.toFixed(3);
+                    confidence.textContent = '100%';
+
+                    const leftTop = landmarks[159];
+                    const leftBottom = landmarks[145];
+                    const eyeDistance = leftTop.y - leftBottom.y;
+
+                    if (eyeDistance < 0.007 && !blinkLocked) {
+                        blinkCount += 1;
+                        fixationCount.textContent = blinkCount;
+                        blinkLocked = true;
+                    } else if (eyeDistance > 0.012) {
+                        blinkLocked = false;
+                    }
+
+                    if (showGazePoint.checked) {
+                        gazePoint.style.display = 'block';
+                        gazePoint.style.left = `${gazeXnorm * width - 20}px`;
+                        gazePoint.style.top = `${gazeYnorm * height - 20}px`;
+                    } else {
+                        gazePoint.style.display = 'none';
+                    }
+
+                    gazeData.push({
+                        x: gazeXnorm * heatmapCanvas.width,
+                        y: gazeYnorm * heatmapCanvas.height,
+                        value: 0.72
+                    });
+
+                    canvasCtx.fillStyle = 'rgba(0, 255, 0, 0.8)';
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(gazeXnorm * width, gazeYnorm * height, 6, 0, Math.PI * 2);
+                    canvasCtx.fill();
+
+                    updateHeatmap();
+                } else {
+                    gazeX.textContent = '0.00';
+                    gazeY.textContent = '0.00';
+                    confidence.textContent = '0%';
+                    gazePoint.style.display = 'none';
+                }
+
+                canvasCtx.restore();
+            }
+
+            function initializeFaceMesh() {
+                if (faceMesh) return;
+                faceMesh = new FaceMesh({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+                });
+                faceMesh.setOptions({
+                    maxNumFaces: 1,
+                    refineLandmarks: true,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+                faceMesh.onResults(onResults);
+            }
+
+            function startCamera() {
+                if (isTracking) return;
+
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showCameraError('Camera is not supported in this browser. Use a modern browser like Chrome or Edge.');
+                    return;
+                }
+
+                initializeFaceMesh();
+                hideCameraError();
+
+                camera = new Camera(videoElement, {
+                    onFrame: async () => {
+                        await faceMesh.send({image: videoElement});
+                    },
+                    width: 640,
+                    height: 480
+                });
+                camera.start().catch((error) => {
+                    console.error('Camera start failed:', error);
+                    const message = error && error.name === 'NotAllowedError'
+                        ? 'Camera permission denied. Allow webcam access and refresh the page.'
+                        : 'Unable to start camera. Check browser permissions and webcam availability.';
+                    showCameraError(message);
+                });
+                isTracking = true;
+                blinkCount = 0;
+                fixationCount.textContent = blinkCount;
+                trackingStatus.innerHTML = '<i class="fas fa-circle" style="color: #38a169;"></i> Tracking Active';
+                trackingStatus.style.background = '#c6f6d5';
+                trackingStatus.style.color = '#22543d';
+                startBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Tracking';
+                startBtn.classList.remove('btn-primary');
+                startBtn.classList.add('btn-secondary');
+                gazeData = [];
+            }
+
+            function stopCamera() {
+                if (!isTracking) return;
+                if (camera) camera.stop();
+                isTracking = false;
+                trackingStatus.innerHTML = '<i class="fas fa-circle"></i> Not Tracking';
+                trackingStatus.style.background = '#fed7d7';
+                trackingStatus.style.color = '#9b2c2c';
+                gazePoint.style.display = 'none';
+                startBtn.innerHTML = '<i class="fas fa-play-circle"></i> Start Tracking';
+                startBtn.classList.remove('btn-secondary');
+                startBtn.classList.add('btn-primary');
+            }
+
+            startBtn.addEventListener('click', function() {
+                if (!isTracking) {
+                    startCamera();
+                } else {
+                    stopCamera();
+                }
+            });
+
+            stopBtn.addEventListener('click', function() {
+                stopCamera();
+            });
+
+            calibrateBtn.addEventListener('click', function() {
+                if (isTracking) {
+                    alert('Please stop tracking first to calibrate.');
+                    return;
+                }
+                alert('Calibration: look at the center of the video and allow the webcam to stabilize.');
+            });
+
+            exportBtn.addEventListener('click', function() {
+                if (gazeData.length === 0) {
+                    alert('No data to export. Start tracking first.');
+                    return;
+                }
+                const exportData = {
+                    sessionId: `session_${Date.now()}`,
+                    timestamp: new Date().toISOString(),
+                    totalBlinks: blinkCount,
+                    gazeData: gazeData.map((point, index) => ({
+                        timestamp: index * 50,
+                        x: (point.x / heatmapCanvas.width).toFixed(3),
+                        y: (point.y / heatmapCanvas.height).toFixed(3),
+                        confidence: point.value.toFixed(3)
+                    }))
+                };
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+                const exportFileDefaultName = `gazeinsight_session_${Date.now()}.json`;
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+                alert('Gaze data exported successfully!');
+            });
+
+            showGazePoint.addEventListener('change', function() {
+                gazePoint.style.display = this.checked && isTracking ? 'block' : 'none';
+            });
+
+            function initHeatmapCanvas() {
+                const container = heatmapCanvas.parentElement;
+                heatmapCanvas.width = container.clientWidth;
+                heatmapCanvas.height = 300;
+            }
+
+            window.addEventListener('resize', initHeatmapCanvas);
+            initHeatmapCanvas();
+        });
+    </script>
+</body>
+</html>
